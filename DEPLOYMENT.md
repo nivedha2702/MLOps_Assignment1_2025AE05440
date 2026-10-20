@@ -1,9 +1,7 @@
-# Google Kubernetes Engine deployment
+# Local Kubernetes deployment
 
-This repository's automated cloud deployment target is **Google Kubernetes Engine (GKE)**, not Cloud Run. The `CD - GKE` workflow waits for a successful push-triggered CI run on `main`, builds and pushes the tested commit to Artifact Registry, deploys the API, waits for rollout, and checks the public `/health` endpoint.
+The assignment can be demonstrated on local Kubernetes using Docker Desktop Kubernetes or Minikube. This project does not configure or use GKE or any public cloud, and no public API URL is created.
 
-Complete the GCP project, GKE cluster, Artifact Registry, Workload Identity Federation, namespace-scoped Kubernetes permissions, and GitHub environment setup in the [GKE continuous deployment section of the README](README.md#gke-continuous-deployment-optional-requires-google-cloud-setup). The workflow uses short-lived OIDC credentials; do not create a service-account JSON key.
+Follow the [local Kubernetes deployment instructions](README.md#kubernetes-local-lab-deployment) to build/load the image, deploy the API and monitoring stack, port-forward the endpoints, and run the verification script.
 
-**No public API URL exists until you configure those cloud resources and GitHub environment values and the CD run succeeds.** When deployed, the Actions log prints the assigned public API URL, health endpoint, and API documentation URL. The URL can change if the cluster or LoadBalancer Service is recreated.
-
-The public API is an educational demonstration, served over HTTP, and must not receive real patient information.
+GitHub Actions currently provides CI (lint, tests, training, and artifacts). Deployment to the local cluster is performed manually from your workstation; GitHub-hosted runners cannot directly access your local Docker Desktop or Minikube cluster. Capture your own run as evidence using [screenshots/README.md](screenshots/README.md).
