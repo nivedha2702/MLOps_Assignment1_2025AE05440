@@ -84,13 +84,7 @@ python -m pytest
 python -m uvicorn src.api:app --reload --host 127.0.0.1 --port 8000
 ```
 
-After training and EDA, generate the editable report from the actual local metrics:
-
-```powershell
-python -m scripts.generate_report
-```
-
-This creates `reports\Heart_Disease_MLOps_Report.docx`. Add your name, repository URL, original screenshots, and lab deployment evidence, then check that the rendered document is exactly ten pages before submitting.
+Update `REPORT.md` with the measured results and evidence from your local run before submission. This project uses the Markdown report; generated DOCX output is not included.
 
 Open `http://127.0.0.1:8000/docs` for interactive API documentation. In a second terminal:
 
@@ -236,11 +230,9 @@ Record original screenshots under [screenshots/README.md](screenshots/README.md)
 - [`REPORT.md`](REPORT.md): project-specific methods, limitations, and report outline. Replace the marked run-specific placeholders using generated results.
 - `artifacts/`: EDA figures, dataset profile, run metrics/plots, final training summary.
 - `models/heart_disease.joblib`: final scikit-learn preprocessing + estimator pipeline.
-- `reports/Heart_Disease_MLOps_Report.docx`: generated editable report with measured local results and evidence reminders.
 - `monitoring/` and `k8s/monitoring/`: Prometheus scrape configs and the provisioned Grafana dashboard/datasource.
 - `mlflow.db`: local MLflow experiment history (ignored by Git).
 - `screenshots/`: evidence checklist; capture the screenshots yourself.
-- [`scripts/generate_report.py`](scripts/generate_report.py): creates a ten-section editable DOCX report from actual local metrics after training; add your identity, screenshots, and deployment evidence, and verify pagination before submitting.
 - [`scripts/verify_deployment.ps1`](scripts/verify_deployment.ps1): verifies API readiness/prediction/metrics, Prometheus target health, and Grafana health after Compose or Kubernetes port-forwarding.
 - [`scripts/cleanup_local_k8s.ps1`](scripts/cleanup_local_k8s.ps1): removes only the project's Kubernetes namespace and handles a pending local LoadBalancer cleanup finalizer safely.
 

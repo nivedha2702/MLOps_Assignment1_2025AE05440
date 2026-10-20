@@ -28,6 +28,7 @@ mlruns/
 mlartifacts/
 mlflow.db
 mlflow.db-*
+reports/Heart_Disease_MLOps_Report.docx
 monitoring-data/
 *.log
 .env
