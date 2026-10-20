@@ -212,7 +212,7 @@ With those forwards running, open Grafana at `http://127.0.0.1:3000` (user `admi
 .\scripts\verify_deployment.ps1
 ```
 
-The API manifest requests a `LoadBalancer`; local clusters may show `<pending>`, which is expected—use port-forward or Minikube's service tunnel. Prometheus and Grafana stay ClusterIP services and are accessed by port-forward. A cloud cluster can instead provide a public API LoadBalancer address, with provider-specific network/security setup. Never describe the local endpoint as a public cloud deployment. Inspect logs and clean up:
+The API manifest requests a `LoadBalancer`; local clusters may show `<pending>`, which is expected—use port-forward or Minikube's service tunnel. Prometheus and Grafana stay ClusterIP services and are accessed by port-forward. These commands expose local endpoints only; they do not create a public API URL. Inspect logs and clean up:
 
 ```powershell
 kubectl logs -n heart-disease-mlops deployment/heart-disease-api
@@ -226,6 +226,8 @@ The cleanup helper targets only the dedicated `heart-disease-mlops` namespace. I
 ## CI/CD and evidence
 
 `.github/workflows/ci.yml` runs on push, pull request, and manual dispatch. It installs dependencies on Python 3.11 and 3.12, runs Ruff and Pytest, downloads/prepares the data, generates EDA, trains/tracks all model candidates, and uploads reports/data/MLflow outputs even when a later step fails. CI training runs on GitHub-hosted runners; download the uploaded run artifacts to inspect its model outputs or MLflow database locally.
+
+There is no automated CD workflow. GitHub-hosted Actions runners cannot access your local Docker Desktop or Minikube cluster; deploy manually from your workstation using the local Kubernetes instructions above.
 
 Record original screenshots under [screenshots/README.md](screenshots/README.md), showing your actual local/lab runs. The instructions require a short overall-pipeline video: record your own end-to-end run (for example, data/EDA → MLflow → tests/CI → Docker API → local Kubernetes/metrics) using your institution-approved screen recorder; no recording is fabricated or included here.
 
@@ -242,7 +244,7 @@ Record original screenshots under [screenshots/README.md](screenshots/README.md)
 - [`scripts/verify_deployment.ps1`](scripts/verify_deployment.ps1): verifies API readiness/prediction/metrics, Prometheus target health, and Grafana health after Compose or Kubernetes port-forwarding.
 - [`scripts/cleanup_local_k8s.ps1`](scripts/cleanup_local_k8s.ps1): removes only the project's Kubernetes namespace and handles a pending local LoadBalancer cleanup finalizer safely.
 
-For the Docker API alone you do not need to install training dependencies into your host environment; the image builds the model in a controlled builder stage. For Kubernetes you additionally need a running local cluster and a reachable/loadable image. Repository publication, screenshots, and video require your own account and actions.
+For the Docker API alone you do not need to install training dependencies into your host environment; the image builds the model in a controlled builder stage. For Kubernetes you additionally need a running cluster and a reachable/loadable image. Public cloud deployment, repository publication, screenshots, and video require your own account and actions.
 
 ## Publish to your own GitHub repository (optional, required for CI evidence)
 
