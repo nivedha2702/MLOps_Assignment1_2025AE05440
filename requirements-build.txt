@@ -1,0 +1,3 @@
+# Dependencies needed only to train the model in the Docker builder stage.
+-r requirements-api.txt
+matplotlib>=3.8,<4

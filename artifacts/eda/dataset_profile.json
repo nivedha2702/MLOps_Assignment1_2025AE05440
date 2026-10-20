@@ -1,0 +1,28 @@
+{
+  "rows": 303,
+  "features": 13,
+  "missing_values_by_column": {
+    "age": 0,
+    "trestbps": 0,
+    "chol": 0,
+    "thalach": 0,
+    "oldpeak": 0,
+    "sex": 0,
+    "cp": 0,
+    "fbs": 0,
+    "restecg": 0,
+    "exang": 0,
+    "slope": 0,
+    "ca": 4,
+    "thal": 2
+  },
+  "target_counts": {
+    "0": 164,
+    "1": 139
+  },
+  "plots": [
+    "feature_distributions.png",
+    "class_balance.png",
+    "correlation_heatmap.png"
+  ]
+}

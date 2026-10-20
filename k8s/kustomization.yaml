@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: heart-disease-mlops
+
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - monitoring-stack.yaml
+
+configMapGenerator:
+  - name: heart-prometheus-config
+    files:
+      - monitoring/prometheus.yml
+  - name: grafana-datasource
+    files:
+      - monitoring/grafana-datasource.yml
+  - name: grafana-dashboard-provider
+    files:
+      - monitoring/grafana-dashboards.yml
+  - name: heart-grafana-dashboard
+    files:
+      - monitoring/heart-disease-api.json

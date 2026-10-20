@@ -1,0 +1,113 @@
+{
+  "dataset": "UCI Heart Disease (Cleveland; target: 0 vs 1-4)",
+  "rows": 303,
+  "features": [
+    "age",
+    "trestbps",
+    "chol",
+    "thalach",
+    "oldpeak",
+    "sex",
+    "cp",
+    "fbs",
+    "restecg",
+    "exang",
+    "slope",
+    "ca",
+    "thal"
+  ],
+  "split": {
+    "test_size": 0.2,
+    "random_state": 42,
+    "stratified": true
+  },
+  "cross_validation": {
+    "folds": 5,
+    "selection_metric": "roc_auc"
+  },
+  "selection": {
+    "model": "random_forest_tuned",
+    "reason": "Highest mean stratified cross-validation ROC-AUC on training data."
+  },
+  "runs": [
+    {
+      "run_name": "random_forest_tuned",
+      "cv_mean": {
+        "accuracy": 0.8014455782312926,
+        "precision": 0.7877761069340016,
+        "recall": 0.7826086956521738,
+        "roc_auc": 0.9033912142607795
+      },
+      "holdout": {
+        "accuracy": 0.8688524590163934,
+        "precision": 0.8125,
+        "recall": 0.9285714285714286,
+        "roc_auc": 0.9567099567099567
+      },
+      "tuning": {
+        "best_params": {
+          "classifier__max_depth": 5,
+          "classifier__min_samples_leaf": 4
+        }
+      }
+    },
+    {
+      "run_name": "logistic_regression_baseline",
+      "cv_mean": {
+        "accuracy": 0.8471088435374149,
+        "precision": 0.8767529146045769,
+        "recall": 0.783399209486166,
+        "roc_auc": 0.9024931590148981
+      },
+      "holdout": {
+        "accuracy": 0.8852459016393442,
+        "precision": 0.8387096774193549,
+        "recall": 0.9285714285714286,
+        "roc_auc": 0.9664502164502166
+      },
+      "tuning": {
+        "tuned": false
+      }
+    },
+    {
+      "run_name": "logistic_regression_tuned",
+      "cv_mean": {
+        "accuracy": 0.8471088435374149,
+        "precision": 0.8767529146045769,
+        "recall": 0.783399209486166,
+        "roc_auc": 0.9024931590148981
+      },
+      "holdout": {
+        "accuracy": 0.8852459016393442,
+        "precision": 0.8387096774193549,
+        "recall": 0.9285714285714286,
+        "roc_auc": 0.9664502164502166
+      },
+      "tuning": {
+        "best_params": {
+          "classifier__C": 1.0
+        }
+      }
+    },
+    {
+      "run_name": "random_forest_baseline",
+      "cv_mean": {
+        "accuracy": 0.8016156462585033,
+        "precision": 0.7788378288378289,
+        "recall": 0.800790513833992,
+        "roc_auc": 0.8985113115547897
+      },
+      "holdout": {
+        "accuracy": 0.8852459016393442,
+        "precision": 0.8181818181818182,
+        "recall": 0.9642857142857143,
+        "roc_auc": 0.9464285714285714
+      },
+      "tuning": {
+        "tuned": false
+      }
+    }
+  ],
+  "artifact": "models\\heart_disease.joblib",
+  "tracking_uri": "sqlite:///C:/MLOps_Assignment1_2025AE05440/mlflow.db"
+}
