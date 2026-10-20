@@ -290,7 +290,6 @@ This repository does **not** create or pay for a Google Cloud project, Artifact 
    | `GCP_ARTIFACT_REPOSITORY` | `heart-disease` or your registry name |
    | `GKE_CLUSTER` | `heart-disease-gke` or your cluster name |
    | `GKE_LOCATION` | Cluster region, e.g. `us-central1` |
-   | `GKE_DEPLOYMENT_ENABLED` | Set to `true` only after the cloud resources, IAM, namespace, and secrets below are ready |
 
    Add these **environment secrets**:
 
@@ -299,7 +298,7 @@ This repository does **not** create or pay for a Google Cloud project, Artifact 
    | `GCP_WORKLOAD_IDENTITY_PROVIDER` | Full `$provider` resource name printed by `Write-Output $provider` |
    | `GCP_DEPLOY_SERVICE_ACCOUNT` | The `$serviceAccount` email printed by `Write-Output $serviceAccount` |
 
-   Do not create or upload a service-account JSON key. Optionally require an environment reviewer in GitHub Settings to approve each deployment.
+   Separately, add the repository-level Actions variable `GKE_DEPLOYMENT_ENABLED` with value `true` under **Settings → Secrets and variables → Actions → Variables**. This explicit opt-in is checked before the deployment job starts; leave it unset until the cloud resources, IAM, namespace, and environment values/secrets are ready. Do not create or upload a service-account JSON key. Optionally require an environment reviewer in GitHub Settings to approve each deployment.
 
 6. Push a change to `main`. The CI workflow must pass first; then the CD workflow builds and publishes the SHA-tagged image and deploys it. Check the `CD - GKE` run under **Actions**. A successful run prints `Public API URL` and `/health`; confirm the URL responds and save the Actions and browser screenshots as evidence. The API URL is the assigned external IP and may change if the Service or cluster is recreated.
 
