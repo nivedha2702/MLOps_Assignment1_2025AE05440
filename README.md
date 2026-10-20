@@ -225,7 +225,90 @@ The cleanup helper targets only the dedicated `heart-disease-mlops` namespace. I
 
 ## CI/CD and evidence
 
-`.github/workflows/ci.yml` runs on push, pull request, and manual dispatch. It installs dependencies on Python 3.11 and 3.12, runs Ruff and Pytest, downloads/prepares the data, generates EDA, trains/tracks all model candidates, and uploads reports/data/MLflow outputs even when a later step fails. To use GitHub Actions, push this project to a repository you own and enable Actions; the workflow cannot create a repository or run without your account.
+`.github/workflows/ci.yml` runs on push, pull request, and manual dispatch. It installs dependencies on Python 3.11 and 3.12, runs Ruff and Pytest, downloads/prepares the data, generates EDA, trains/tracks all model candidates, and uploads reports/data/MLflow outputs even when a later step fails. CI training runs on GitHub-hosted runners; download the uploaded run artifacts to inspect its model outputs or MLflow database locally.
+
+### GKE continuous deployment (optional; requires Google Cloud setup)
+
+`.github/workflows/cd-gke.yml` builds and pushes the exact commit that passed CI to Artifact Registry, deploys the API to GKE, waits for the rollout, and checks `/health` through the public LoadBalancer IP. It only runs after a successful **push-triggered** CI run on `main`; failed CI runs and pull requests do not deploy. The GKE overlay deploys only the API, not the local monitoring stack. The existing Docker Desktop/Compose monitoring setup remains available for the monitoring demo.
+
+This repository does **not** create or pay for a Google Cloud project, Artifact Registry, GKE cluster, or public load balancer. Until you complete the setup below and a CD run succeeds, there is no public API URL. GKE and an external load balancer may incur charges; review current Google Cloud pricing and delete the cluster when finished. The API is exposed over HTTP for this assignment demo; do not submit real patient information.
+
+1. Create a Google Cloud project with billing enabled and install/initialize the Google Cloud CLI. In PowerShell, set your project, region, and resource names, then enable the required services and create the registry and GKE Autopilot cluster:
+
+   ```powershell
+   $env:GCP_PROJECT_ID = "your-project-id"
+   $env:GCP_REGION = "us-central1"
+   $env:GKE_CLUSTER = "heart-disease-gke"
+   $env:GCP_ARTIFACT_REPOSITORY = "heart-disease"
+   gcloud auth login
+   gcloud config set project $env:GCP_PROJECT_ID
+   gcloud services enable iam.googleapis.com iamcredentials.googleapis.com artifactregistry.googleapis.com container.googleapis.com --project $env:GCP_PROJECT_ID
+   gcloud artifacts repositories create $env:GCP_ARTIFACT_REPOSITORY --repository-format=docker --location=$env:GCP_REGION --project=$env:GCP_PROJECT_ID
+   gcloud container clusters create-auto $env:GKE_CLUSTER --region=$env:GCP_REGION --project=$env:GCP_PROJECT_ID
+   gcloud container clusters get-credentials $env:GKE_CLUSTER --region=$env:GCP_REGION --project=$env:GCP_PROJECT_ID
+   kubectl create namespace heart-disease-mlops
+   ```
+
+2. Create a dedicated deployment service account. Grant it only registry upload, cluster discovery, and Artifact Registry read access for the GKE node identity:
+
+   ```powershell
+   $env:GCP_DEPLOY_SERVICE_ACCOUNT = "github-gke-deployer"
+   gcloud iam service-accounts create $env:GCP_DEPLOY_SERVICE_ACCOUNT --project=$env:GCP_PROJECT_ID
+   $projectNumber = gcloud projects describe $env:GCP_PROJECT_ID --format="value(projectNumber)"
+   $serviceAccount = "$($env:GCP_DEPLOY_SERVICE_ACCOUNT)@$($env:GCP_PROJECT_ID).iam.gserviceaccount.com"
+   gcloud projects add-iam-policy-binding $env:GCP_PROJECT_ID --member="serviceAccount:$serviceAccount" --role="roles/container.clusterViewer"
+   gcloud artifacts repositories add-iam-policy-binding $env:GCP_ARTIFACT_REPOSITORY --location=$env:GCP_REGION --project=$env:GCP_PROJECT_ID --member="serviceAccount:$serviceAccount" --role="roles/artifactregistry.writer"
+   $nodeServiceAccount = "$($projectNumber)-compute@developer.gserviceaccount.com"
+   gcloud artifacts repositories add-iam-policy-binding $env:GCP_ARTIFACT_REPOSITORY --location=$env:GCP_REGION --project=$env:GCP_PROJECT_ID --member="serviceAccount:$nodeServiceAccount" --role="roles/artifactregistry.reader"
+   ```
+
+3. Bootstrap the namespace-scoped Kubernetes deployment permission as your cluster administrator. This grants the GitHub service account access only to this app's Deployment and Service in the `heart-disease-mlops` namespace:
+
+   ```powershell
+   (Get-Content .\k8s\gke\deployer-rbac.yaml -Raw).Replace(
+     "REPLACE_WITH_GCP_DEPLOY_SERVICE_ACCOUNT_EMAIL",
+     $serviceAccount
+   ) | kubectl apply -f -
+   ```
+
+4. Configure Google Workload Identity Federation so GitHub Actions can impersonate that service account without a long-lived JSON key:
+
+   ```powershell
+   gcloud iam workload-identity-pools create github-actions --project=$env:GCP_PROJECT_ID --location=global --display-name="GitHub Actions"
+   gcloud iam workload-identity-pools providers create-oidc github --project=$env:GCP_PROJECT_ID --location=global --workload-identity-pool=github-actions --display-name="GitHub repository" --issuer-uri="https://token.actions.githubusercontent.com" --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" --attribute-condition="assertion.repository == 'nivedha2702/MLOps_Assignment1_2025AE05440'"
+   $provider = "projects/$($projectNumber)/locations/global/workloadIdentityPools/github-actions/providers/github"
+   $principal = "principalSet://iam.googleapis.com/projects/$($projectNumber)/locations/global/workloadIdentityPools/github-actions/attribute.repository/nivedha2702/MLOps_Assignment1_2025AE05440"
+   gcloud iam service-accounts add-iam-policy-binding $serviceAccount --project=$env:GCP_PROJECT_ID --role="roles/iam.workloadIdentityUser" --member=$principal
+   ```
+
+5. In GitHub, create the **`gke-production`** environment (Repository → Settings → Environments), then add these environment variables:
+
+   | Variable | Value |
+   |---|---|
+   | `GCP_PROJECT_ID` | Your Google Cloud project ID |
+   | `GCP_ARTIFACT_REGION` | Same region as the Artifact Registry, e.g. `us-central1` |
+   | `GCP_ARTIFACT_REPOSITORY` | `heart-disease` or your registry name |
+   | `GKE_CLUSTER` | `heart-disease-gke` or your cluster name |
+   | `GKE_LOCATION` | Cluster region, e.g. `us-central1` |
+   | `GKE_DEPLOYMENT_ENABLED` | Set to `true` only after the cloud resources, IAM, namespace, and secrets below are ready |
+
+   Add these **environment secrets**:
+
+   | Secret | Value |
+   |---|---|
+   | `GCP_WORKLOAD_IDENTITY_PROVIDER` | Full `$provider` resource name printed by `Write-Output $provider` |
+   | `GCP_DEPLOY_SERVICE_ACCOUNT` | The `$serviceAccount` email printed by `Write-Output $serviceAccount` |
+
+   Do not create or upload a service-account JSON key. Optionally require an environment reviewer in GitHub Settings to approve each deployment.
+
+6. Push a change to `main`. The CI workflow must pass first; then the CD workflow builds and publishes the SHA-tagged image and deploys it. Check the `CD - GKE` run under **Actions**. A successful run prints `Public API URL` and `/health`; confirm the URL responds and save the Actions and browser screenshots as evidence. The API URL is the assigned external IP and may change if the Service or cluster is recreated.
+
+To remove billable cloud resources after the demo, delete the cluster and Artifact Registry repository when you no longer need them:
+
+```powershell
+gcloud container clusters delete $env:GKE_CLUSTER --region=$env:GCP_REGION --project=$env:GCP_PROJECT_ID
+gcloud artifacts repositories delete $env:GCP_ARTIFACT_REPOSITORY --location=$env:GCP_REGION --project=$env:GCP_PROJECT_ID
+```
 
 Record original screenshots under [screenshots/README.md](screenshots/README.md), showing your actual local/lab runs. The instructions require a short overall-pipeline video: record your own end-to-end run (for example, data/EDA → MLflow → tests/CI → Docker API → local Kubernetes/metrics) using your institution-approved screen recorder; no recording is fabricated or included here.
 
